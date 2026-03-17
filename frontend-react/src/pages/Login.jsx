@@ -18,7 +18,8 @@ export default function Login() {
         password: formData.password
       });
       console.log('Login successful', response.data);
-      // In a real app we would save the JWT token here
+      localStorage.setItem('studentId', response.data.user.id);
+      localStorage.setItem('token', response.data.token);
       navigate('/dashboard');
     } catch (error) {
       console.error("Login failed:", error);
@@ -31,10 +32,12 @@ export default function Login() {
   const handleChange = (e) => setFormData({...formData, [e.target.name]: e.target.value});
 
   return (
-    <div className="min-h-screen bg-slate-950 flex items-center justify-center p-4 relative overflow-hidden">
-      <div className="absolute top-1/4 left-1/4 w-96 h-96 bg-blue-600/20 blur-[100px] rounded-full mix-blend-screen pointer-events-none"></div>
-      
-      <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} className="w-full max-w-md bg-slate-900/80 backdrop-blur-xl border border-slate-800 rounded-3xl p-8 relative z-10 shadow-2xl">
+    <div className="min-h-screen flex items-center justify-center p-4 relative">
+      <motion.div 
+        initial={{ opacity: 0, y: 20 }} 
+        animate={{ opacity: 1, y: 0 }} 
+        className="w-full max-w-md bg-slate-900/40 backdrop-blur-3xl border border-white/10 rounded-3xl p-8 relative z-10 shadow-2xl"
+      >
         <div className="text-center mb-10">
           <div className="w-12 h-12 rounded-xl bg-blue-600 flex items-center justify-center mx-auto mb-4 shadow-[0_0_20px_rgba(37,99,235,0.4)]">
             <Lock size={24} className="text-white" />

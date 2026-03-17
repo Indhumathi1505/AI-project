@@ -4,14 +4,10 @@ import { PlayCircle, Target, Zap, Shield, ChevronRight } from 'lucide-react';
 
 export default function LandingPage() {
   return (
-    <div className="min-h-screen bg-slate-950 text-slate-100 overflow-hidden font-sans">
-      
-      {/* Background Effects */}
-      <div className="absolute top-[-10%] left-[-10%] w-[40%] h-[40%] bg-blue-600/20 blur-[120px] rounded-full mix-blend-screen pointer-events-none"></div>
-      <div className="absolute bottom-[-10%] right-[-10%] w-[40%] h-[40%] bg-emerald-600/10 blur-[120px] rounded-full mix-blend-screen pointer-events-none"></div>
+    <div className="min-h-screen overflow-hidden font-sans">
       
       {/* Navbar */}
-      <nav className="fixed top-0 w-full p-6 flex justify-between items-center z-50 backdrop-blur-sm border-b border-white/5">
+      <nav className="fixed top-0 w-full p-6 flex justify-between items-center z-50 backdrop-blur-md border-b border-white/5 bg-slate-950/20">
         <div className="flex items-center gap-2">
           <div className="w-8 h-8 rounded-lg bg-blue-600 flex items-center justify-center glow-effect">
             <Zap size={16} className="text-white" />

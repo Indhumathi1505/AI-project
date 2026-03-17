@@ -1,0 +1,27 @@
+# Java / Maven build artifacts
+backend/springboot/target/
+backend/springboot/.settings/
+backend/springboot/.classpath
+backend/springboot/.project
+backend/springboot/*.iml
+
+# Node / React artifacts
+frontend-react/node_modules/
+frontend-react/dist/
+frontend-react/build/
+frontend-react/.env.local
+frontend-react/.env.development.local
+frontend-react/.env.test.local
+frontend-react/.env.production.local
+frontend-react/npm-debug.log*
+frontend-react/yarn-debug.log*
+frontend-react/yarn-error.log*
+
+# OS artifacts
+.DS_Store
+Thumbs.db
+
+# Secrets (preventive)
+*.pem
+*.key
+.env

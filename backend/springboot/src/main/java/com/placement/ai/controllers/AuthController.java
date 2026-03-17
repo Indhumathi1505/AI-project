@@ -16,25 +16,33 @@ public class AuthController {
 
     @PostMapping("/register")
     public ResponseEntity<?> register(@RequestBody Student student) {
-        // In real app, encode password
-        student.setRole("USER");
-        studentRepository.save(student);
-        return ResponseEntity.ok("Student registered successfully");
+        try {
+            student.setRole("USER");
+            studentRepository.save(student);
+            return ResponseEntity.ok(java.util.Map.of("message", "Registration successful", "studentId", student.getId()));
+        } catch (Exception e) {
+            return ResponseEntity.status(400).body(java.util.Map.of("error", e.getMessage()));
+        }
     }
 
     @PostMapping("/login")
     public ResponseEntity<?> login(@RequestBody LoginRequest loginRequest) {
-        // Dummy implementation for now, in real scenario check password and generate JWT
-        return ResponseEntity.ok(new JwtResponse("dummy-jwt-token"));
+        // Find user by email
+        Student student = studentRepository.findByEmail(loginRequest.username);
+        
+        if (student != null && student.getPassword().equals(loginRequest.password)) {
+            // Found student
+            return ResponseEntity.ok(java.util.Map.of(
+                "token", "dummy-jwt-token-" + student.getId(),
+                "user", student
+            ));
+        }
+        
+        return ResponseEntity.status(401).body(java.util.Map.of("error", "Invalid email or password"));
     }
 }
 
 class LoginRequest {
-    public String email;
+    public String username; // Frontend sends 'username' because of aiApi.login({username: ...})
     public String password;
-}
-
-class JwtResponse {
-    public String token;
-    public JwtResponse(String token) { this.token = token; }
 }

@@ -1,7 +1,7 @@
 import { useState } from 'react';
+import { motion } from 'framer-motion';
 import { Link, useNavigate } from 'react-router-dom';
 import { User, Mail, Lock, Code, Award, ArrowRight, Loader } from 'lucide-react';
-import { motion } from 'framer-motion';
 import { aiApi } from '../services/api';
 
 export default function Register() {
@@ -28,7 +28,7 @@ export default function Register() {
       navigate('/login');
     } catch (error) {
       console.error("Registration failed:", error);
-      alert("Registration failed. Please check the console.");
+      alert("Registration failed. Please ensure the backend is running.");
     } finally {
       setLoading(false);
     }
@@ -37,10 +37,9 @@ export default function Register() {
   const handleChange = (e) => setFormData({...formData, [e.target.name]: e.target.value});
 
   return (
-    <div className="min-h-screen bg-slate-950 py-12 px-4 relative flex items-center justify-center">
-      <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[800px] h-[800px] bg-blue-600/10 blur-[120px] rounded-full mix-blend-screen pointer-events-none"></div>
+    <div className="min-h-screen py-12 px-4 relative flex items-center justify-center">
       
-      <motion.div initial={{ opacity: 0, scale: 0.95 }} animate={{ opacity: 1, scale: 1 }} className="w-full max-w-4xl bg-slate-900/80 backdrop-blur-xl border border-slate-800 rounded-3xl p-8 md:p-12 relative z-10 shadow-2xl">
+      <motion.div initial={{ opacity: 0, scale: 0.95 }} animate={{ opacity: 1, scale: 1 }} className="w-full max-w-4xl bg-slate-900/40 backdrop-blur-3xl border border-white/10 rounded-3xl p-8 md:p-12 relative z-10 shadow-2xl">
         <div className="text-center mb-10">
           <h2 className="text-3xl font-bold text-white tracking-tight">Create your Profile</h2>
           <p className="text-slate-400 mt-2">Tell us about yourself to get personalized AI predictions</p>

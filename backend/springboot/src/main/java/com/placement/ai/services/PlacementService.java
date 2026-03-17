@@ -7,9 +7,20 @@ import com.placement.ai.repositories.PredictionRepository;
 import com.placement.ai.repositories.SkillGapRepository;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
+import org.springframework.web.client.RestTemplate;
+import org.springframework.http.ResponseEntity;
+import org.springframework.http.HttpEntity;
+import org.springframework.http.HttpHeaders;
+import org.springframework.http.MediaType;
+import org.springframework.util.LinkedMultiValueMap;
+import org.springframework.util.MultiValueMap;
+import org.springframework.web.multipart.MultipartFile;
+import org.springframework.core.io.ByteArrayResource;
 import java.util.List;
 import java.util.Arrays;
 import java.util.ArrayList;
+import java.util.Map;
+import java.util.HashMap;
 
 @Service
 public class PlacementService {
@@ -21,48 +32,103 @@ public class PlacementService {
     private SkillGapRepository skillGapRepository;
 
     public Prediction calculatePlacementScores(Student student) {
-        // Simple logic for placement probability (Simulating Random Forest results until we connect to Python AI)
-        double weightCgpa = 30, weightSkills = 25, weightProjects = 15, weightInternships = 20;
+        RestTemplate restTemplate = new RestTemplate();
+        String aiUrl = "http://localhost:8000/api/predict-placement";
 
-        double score = (student.getCgpa() / 10.0) * weightCgpa;
-        score += Math.min(student.getSkills() != null ? student.getSkills().size() * 5 : 0, weightSkills);
-        score += Math.min(student.getProjects() != null ? student.getProjects().size() * 5 : 0, weightProjects);
-        score += Math.min(student.getInternships() != null ? student.getInternships().size() * 7.5 : 0, weightInternships);
+        HttpHeaders headers = new HttpHeaders();
+        headers.setContentType(MediaType.APPLICATION_JSON);
+
+        Map<String, Object> requestBody = new HashMap<>();
+        requestBody.put("cgpa", student.getCgpa());
+        requestBody.put("skills", student.getSkills() != null ? student.getSkills() : new ArrayList<>());
+        requestBody.put("internships", student.getInternships() != null ? student.getInternships() : new ArrayList<>());
+        requestBody.put("projects", student.getProjects() != null ? student.getProjects() : new ArrayList<>());
+
+        HttpEntity<Map<String, Object>> request = new HttpEntity<>(requestBody, headers);
         
-        // Add random variation to mock the rest
-        score += 10;
-        double probability = Math.min(score, 100.0);
-        
-        Prediction prediction = new Prediction();
-        prediction.setStudentId(student.getId());
-        prediction.setPlacementProbability(probability);
-        prediction.setReadinessScore((int) probability);
-        return predictionRepository.save(prediction);
+        try {
+            ResponseEntity<Map> response = restTemplate.postForEntity(aiUrl, request, Map.class);
+            Map<String, Object> aiResult = response.getBody();
+            
+            double probability = Double.parseDouble(aiResult.get("placement_probability").toString());
+            int readiness = (int) Double.parseDouble(aiResult.get("readiness_score").toString());
+            
+            Prediction prediction = new Prediction();
+            prediction.setStudentId(student.getId());
+            prediction.setPlacementProbability(probability);
+            prediction.setReadinessScore(readiness);
+            return predictionRepository.save(prediction);
+        } catch(Exception e) {
+             System.out.println("AI Service Error: " + e.getMessage());
+             // Fallback
+             Prediction prediction = new Prediction();
+             prediction.setStudentId(student.getId());
+             prediction.setPlacementProbability(40.0);
+             prediction.setReadinessScore(40);
+             return predictionRepository.save(prediction);
+        }
     }
     
     public SkillGap detectSkillGaps(Student student) {
-        List<String> industrySkills = Arrays.asList("Java", "Python", "Data Structures", "Algorithms", "SQL", "Spring Boot", "React");
-        List<String> gaps = new ArrayList<>();
-        List<String> recommended = new ArrayList<>();
-        
-        List<String> studentSkills = student.getSkills() != null ? student.getSkills() : new ArrayList<>();
-        
-        for (String s : industrySkills) {
-            boolean found = false;
-            for(String stSkill : studentSkills) {
-                if(stSkill.toLowerCase().contains(s.toLowerCase())) found = true;
-            }
-            if (!found) {
-                gaps.add(s);
-                recommended.add("Advanced course in " + s);
-            }
+        RestTemplate restTemplate = new RestTemplate();
+        String aiUrl = "http://localhost:8000/api/skill-gap";
+
+        HttpHeaders headers = new HttpHeaders();
+        headers.setContentType(MediaType.APPLICATION_JSON);
+
+        Map<String, Object> requestBody = new HashMap<>();
+        requestBody.put("cgpa", student.getCgpa());
+        requestBody.put("skills", student.getSkills() != null ? student.getSkills() : new ArrayList<>());
+        requestBody.put("internships", student.getInternships() != null ? student.getInternships() : new ArrayList<>());
+        requestBody.put("projects", student.getProjects() != null ? student.getProjects() : new ArrayList<>());
+
+        HttpEntity<Map<String, Object>> request = new HttpEntity<>(requestBody, headers);
+
+        try {
+            ResponseEntity<Map> response = restTemplate.postForEntity(aiUrl, request, Map.class);
+            Map<String, Object> aiResult = response.getBody();
+            
+            List<String> gaps = (List<String>) aiResult.get("missing_skills");
+            List<String> recommended = (List<String>) aiResult.get("recommended_courses");
+            
+            SkillGap skillGap = new SkillGap();
+            skillGap.setStudentId(student.getId());
+            skillGap.setMissingSkills(gaps);
+            skillGap.setRecommendedCourses(recommended);
+            
+            return skillGapRepository.save(skillGap);
+        } catch(Exception e) {
+             System.out.println("AI Service Error: " + e.getMessage());
+             return new SkillGap(); // fallback
         }
-        
-        SkillGap skillGap = new SkillGap();
-        skillGap.setStudentId(student.getId());
-        skillGap.setMissingSkills(gaps);
-        skillGap.setRecommendedCourses(recommended);
-        
-        return skillGapRepository.save(skillGap);
+    }
+
+    public Map<String, Object> analyzeResume(MultipartFile file, String studentId) {
+        RestTemplate restTemplate = new RestTemplate();
+        String aiUrl = "http://localhost:8000/api/resume-analysis";
+
+        try {
+            HttpHeaders headers = new HttpHeaders();
+            headers.setContentType(MediaType.MULTIPART_FORM_DATA);
+
+            MultiValueMap<String, Object> body = new LinkedMultiValueMap<>();
+            body.add("file", new ByteArrayResource(file.getBytes()) {
+                @Override
+                public String getFilename() {
+                    return file.getOriginalFilename();
+                }
+            });
+
+            HttpEntity<MultiValueMap<String, Object>> requestEntity = new HttpEntity<>(body, headers);
+            ResponseEntity<Map> response = restTemplate.postForEntity(aiUrl, requestEntity, Map.class);
+            return response.getBody();
+        } catch (Exception e) {
+            System.err.println("Error in PlacementService.analyzeResume: " + e.getMessage());
+            Map<String, Object> fallback = new HashMap<>();
+            fallback.put("extracted_skills", List.of("Java", "General Programming"));
+            fallback.put("resume_score", 50);
+            fallback.put("improvement_tips", List.of("Could not connect to AI Service. Check server status."));
+            return fallback;
+        }
     }
 }

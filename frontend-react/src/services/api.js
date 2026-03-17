@@ -1,18 +1,27 @@
 import axios from 'axios';
 
-const API_URL = 'http://localhost:8083/api';
+const instance = axios.create({
+  baseURL: 'http://localhost:8083/api',
+  timeout: 12000, // 12 second timeout
+});
 
 export const aiApi = {
-  register: (studentData) => axios.post(`${API_URL}/register`, studentData),
-  login: (credentials) => axios.post(`${API_URL}/login`, credentials),
+  register: (studentData) => instance.post('/register', studentData),
+  login: (credentials) => instance.post('/login', credentials),
   
   // Dashboard & Skills
-  predictPlacement: (studentData) => axios.post(`${API_URL}/predict-placement`, studentData),
-  getSkillGap: (studentData) => axios.post(`${API_URL}/skill-gap`, studentData),
+  getStudentProfile: (id) => instance.get(`/student/profile/${id}`),
+  predictPlacement: (studentData) => instance.post('/predict-placement', studentData),
+  getSkillGap: (studentData) => instance.post('/skill-gap', studentData),
   
   // Resume & Interview
-  analyzeResume: (fileFormData) => axios.post(`${API_URL}/resume-analysis`, fileFormData, {
-    headers: { 'Content-Type': 'multipart/form-data' }
-  }),
-  getInterviewQuestions: () => axios.get(`${API_URL}/interview-questions`)
+  analyzeResume: (file, studentId) => {
+    const formData = new FormData();
+    formData.append('file', file);
+    formData.append('studentId', studentId);
+    return instance.post('/resume-analysis', formData, {
+      headers: { 'Content-Type': 'multipart/form-data' }
+    });
+  },
+  getInterviewQuestions: (domain) => instance.get('/interview-questions', { params: { domain } })
 };

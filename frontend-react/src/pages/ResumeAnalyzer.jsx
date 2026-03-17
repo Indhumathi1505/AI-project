@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, useRef } from 'react';
 import { motion } from 'framer-motion';
 import { Upload, FileText, CheckCircle, AlertTriangle, ArrowRight, Loader } from 'lucide-react';
 import { Link } from 'react-router-dom';
@@ -8,13 +8,25 @@ import { aiApi } from '../services/api';
 export default function ResumeAnalyzer() {
   const [isUploading, setIsUploading] = useState(false);
   const [result, setResult] = useState(null);
+  const fileInputRef = useRef(null);
 
-  const handleUpload = async () => {
+  const handleFileChange = (e) => {
+    const file = e.target.files[0];
+    if (file) {
+      handleUpload(file);
+    }
+  };
+
+  const handleUpload = async (file) => {
+    const studentId = localStorage.getItem('studentId');
+    if (!studentId) {
+       alert("Please login again to scan your resume.");
+       return;
+    }
+
     setIsUploading(true);
     try {
-      const formData = new FormData();
-      formData.append('file', new Blob(['fake content'], { type: 'application/pdf' }));
-      const response = await aiApi.analyzeResume(formData);
+      const response = await aiApi.analyzeResume(file, studentId);
       
       setResult({
         score: response.data.resume_score,
@@ -22,8 +34,11 @@ export default function ResumeAnalyzer() {
         missing: ['Deep Learning', 'System Design'],
         tips: response.data.improvement_tips
       });
+      localStorage.setItem('resumeAnalyzed', 'true');
+      localStorage.setItem('studentDomain', response.data.domain || 'General Software Engineering');
     } catch (error) {
       console.error(error);
+      alert("Scanning failed. Ensure the backend and AI servers are running.");
     } finally {
       setIsUploading(false);
     }
@@ -55,8 +70,16 @@ export default function ResumeAnalyzer() {
             Our AI model will extract your skills, analyze the quality of your resume, and provide actionable tips for improvement.
           </p>
           
+          <input 
+            type="file" 
+            ref={fileInputRef} 
+            onChange={handleFileChange} 
+            className="hidden" 
+            accept=".pdf,.doc,.docx" 
+          />
+          
           <button 
-            onClick={handleUpload}
+            onClick={() => fileInputRef.current.click()}
             disabled={isUploading}
             className="relative overflow-hidden group px-8 py-3 rounded-xl bg-blue-600 hover:bg-blue-500 text-white font-medium transition-all shadow-[0_0_20px_rgba(37,99,235,0.4)] disabled:opacity-70 disabled:cursor-not-allowed"
           >
